@@ -714,6 +714,99 @@ function showPanel(html, state) {
   panel.classList.add('panel-visible');
 }
 
+// ============================================================
+// PANEL DRAG — Mobile gesture handling (touch & mouse)
+// ============================================================
+;(function enablePanelDrag() {
+  const panel = document.getElementById('bottom-panel');
+  const handle = document.getElementById('panel-handle');
+  if (!panel || !handle) return;
+
+  let isDragging = false;
+  let startY = 0;
+  let startTranslate = 0;
+  let panelHeight = 0;
+
+  function getHeight() {
+    return panel.getBoundingClientRect().height || (window.innerHeight * 0.4);
+  }
+
+  function setTranslate(px) {
+    panel.style.transform = `translateY(${px}px)`;
+  }
+
+  function onDown(e) {
+    if (window.innerWidth >= 640) return; // only vertical drag on mobile
+    isDragging = true;
+    panelHeight = getHeight();
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    // determine current translate: 0 when visible, panelHeight when hidden
+    const computed = window.getComputedStyle(panel).transform;
+    startTranslate = panel.classList.contains('panel-visible') ? 0 : panelHeight;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = y - startY;
+    const translate = Math.min(panelHeight, Math.max(0, startTranslate + delta));
+    setTranslate(translate);
+    e.preventDefault();
+  }
+
+  function onUp(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    panel.style.transition = 'transform 0.25s ease';
+    // read final translate
+    const matrix = window.getComputedStyle(panel).transform;
+    let m = 0;
+    if (matrix && matrix !== 'none') {
+      const vals = matrix.match(/matrix\([^,]+, [^,]+, [^,]+, [^,]+, ([^,]+), ([^)]+)\)/);
+      if (vals) m = parseFloat(vals[2]);
+    }
+    // fallback: compute from inline style
+    let translate = 0;
+    const inline = panel.style.transform;
+    if (inline && inline.includes('translateY')) {
+      translate = parseFloat(inline.replace(/translateY\(([^p]+)px\)/, '$1')) || 0;
+    } else {
+      translate = m || 0;
+    }
+
+    // if dragged more than 35% of panel height, close it
+    if (translate > panelHeight * 0.35) {
+      panel.classList.remove('panel-visible');
+      setTranslate(panelHeight);
+    } else {
+      panel.classList.add('panel-visible');
+      setTranslate(0);
+    }
+
+    // cleanup after transition
+    setTimeout(() => {
+      panel.style.transition = '';
+      panel.style.transform = '';
+    }, 300);
+  }
+
+  // Pointer & touch events
+  handle.addEventListener('touchstart', onDown, { passive: false });
+  handle.addEventListener('mousedown', onDown);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchend', onUp);
+  window.addEventListener('mouseup', onUp);
+
+  // Quick toggle on handle tap
+  handle.addEventListener('click', (e) => {
+    if (isDragging) return;
+    panel.classList.toggle('panel-visible');
+  });
+})();
+
 // Close panel when tapping the map
 map.on('click', () => {
   const panel = document.getElementById('bottom-panel');

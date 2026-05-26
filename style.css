@@ -55,16 +55,17 @@ button {
 }
 
 /* ============================================================
-   Map Layer — base, fills full viewport
+   Map Layer — base, mobile-first (map sits under header)
    ============================================================ */
 #map {
   position: fixed;
-  top: 0;
+  top: var(--header-h);
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - var(--header-h));
   z-index: 0;
   background: #e9eef5;
+  touch-action: pan-y pinch-zoom;
 }
 
 #map .leaflet-tile-pane {
@@ -141,16 +142,17 @@ button {
 
 #search-input {
   width: 100%;
-  height: 36px;
-  padding: 0 32px 0 32px;
+  height: 44px;
+  padding: 0 36px 0 36px;
   border: 1.5px solid var(--border);
-  border-radius: 18px;
-  font-size: 13px;
+  border-radius: 20px;
+  font-size: 15px;
   font-family: inherit;
   background: var(--surface-2);
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #search-input:focus {
@@ -195,6 +197,11 @@ button {
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   display: none;
+}
+
+#search-results .search-item {
+  padding: 14px 16px;
+  font-size: 15px;
 }
 
 #search-results:not(:empty) {
@@ -248,8 +255,8 @@ button {
 #locate-btn {
   position: relative;
   /* FIX 4: size corrected to 48×48px per MASTER_PROMPT spec */
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--primary);
   color: white;
@@ -411,11 +418,11 @@ button {
 
 /* Drag handle */
 #panel-handle {
-  width: 32px;
-  height: 4px;
+  width: 48px;
+  height: 6px;
   background: var(--border);
-  border-radius: 2px;
-  margin: 10px auto 0;
+  border-radius: 4px;
+  margin: 8px auto 0;
 }
 
 /* Panel content */
@@ -495,15 +502,15 @@ button {
 }
 
 .guide-step-index {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--primary);
   color: white;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
 }
