@@ -26,6 +26,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
 }).addTo(map);
 
+map.attributionControl.setPrefix(false);
+
 // Campus boundary — prevents panning away from campus
 const campusBounds = L.latLngBounds(
   [12.8228, 77.5840],
@@ -56,6 +58,13 @@ let buildings = [];
 // Track the currently active (clicked) layer
 let activeLayer = null;
 
+// Campus navigation anchors used to build supermarket-style guidance routes
+const MAIN_GATE = [12.82915, 77.58758];
+const CAMPUS_SPINE_LNG = 77.58895;
+let routeLayer = null;
+let routeStartMarker = null;
+let routeEndMarker = null;
+
 /**
  * Calculate polygon centroid as average of coordinate pairs.
  * GeoJSON coords are [lng, lat] — returns Leaflet [lat, lng].
@@ -79,6 +88,202 @@ function toLLPairs(coordinates) {
 }
 
 /**
+ * Remove duplicate consecutive route points.
+ */
+function dedupeRoutePoints(points) {
+  return points.filter((point, index) => {
+    if (index === 0) return true;
+    const previous = points[index - 1];
+    return point[0] !== previous[0] || point[1] !== previous[1];
+  });
+}
+
+/**
+ * Build a simple supermarket-style L-shaped guide route.
+ */
+function buildRoutePoints(origin, destination) {
+  const entryTurn = [origin[0], CAMPUS_SPINE_LNG];
+  const spineTurn = [destination[0], CAMPUS_SPINE_LNG];
+  return dedupeRoutePoints([origin, entryTurn, spineTurn, destination]);
+}
+
+/**
+ * Remove the currently drawn route from the map.
+ */
+function clearRoute() {
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+  }
+  routeStartMarker = null;
+  routeEndMarker = null;
+}
+
+/**
+ * Draw a route from the user's location or the main gate to a building.
+ */
+function drawRouteToBuilding(building) {
+  const origin = userMarker ? [userMarker.getLatLng().lat, userMarker.getLatLng().lng] : MAIN_GATE;
+  const points = buildRoutePoints(origin, building.centroid);
+
+  clearRoute();
+
+  routeLayer = L.layerGroup().addTo(map);
+
+  const routePolyline = L.polyline(points, {
+    color: '#F59E0B',
+    weight: 6,
+    opacity: 0.92,
+    lineCap: 'round',
+    lineJoin: 'round',
+    dashArray: '12 10',
+  }).addTo(routeLayer);
+
+  routeStartMarker = L.circleMarker(points[0], {
+    radius: 8,
+    color: '#1F2937',
+    weight: 2,
+    fillColor: '#FFFFFF',
+    fillOpacity: 1,
+  }).addTo(routeLayer);
+
+  routeEndMarker = L.circleMarker(points[points.length - 1], {
+    radius: 9,
+    color: '#F59E0B',
+    weight: 3,
+    fillColor: '#FFF7ED',
+    fillOpacity: 1,
+  }).addTo(routeLayer);
+
+  map.fitBounds(routePolyline.getBounds().pad(0.18), { animate: true, duration: 0.8 });
+}
+
+/**
+ * Compute a short, human-readable guide for the selected building.
+ */
+function buildGuideSteps(building, originLabel, distanceMetres) {
+  const destinationLabel = building.properties.name;
+  const approxMinutes = Math.max(1, Math.round(distanceMetres / 70));
+  const landmark = building.properties.landmark || 'the destination entrance';
+
+  return [
+    `Start from ${originLabel}.`,
+    `Follow the highlighted campus aisle toward the central walkway.`,
+    `Turn at ${landmark} and continue to ${destinationLabel}.`,
+    `Estimated walk: about ${approxMinutes} min · ${Math.round(distanceMetres)} m.`,
+  ];
+}
+
+/**
+ * Show the guidance panel for a selected building.
+ */
+function showGuidePanel(building) {
+  const originLabel = userMarker ? 'your live location' : 'the main gate';
+  const origin = userMarker ? [userMarker.getLatLng().lat, userMarker.getLatLng().lng] : MAIN_GATE;
+  const distanceMetres = Math.round(haversineMetres(origin, building.centroid));
+  const steps = buildGuideSteps(building, originLabel, distanceMetres);
+
+  showPanel(`
+    <div class="guide-shell">
+      <div class="guide-head">
+        <div>
+          <p class="panel-label">Campus guide</p>
+          <p class="panel-building">${building.properties.name}</p>
+          <p class="panel-sub">${building.properties.description}</p>
+        </div>
+        <div class="guide-distance">${distanceMetres} m</div>
+      </div>
+
+      <div class="guide-route-note">
+        <span class="route-pill">Follow the highlighted path</span>
+        <span class="route-pill route-pill-muted">${originLabel}</span>
+      </div>
+
+      <div class="guide-steps">
+        ${steps.map((step, index) => `
+          <div class="guide-step">
+            <span class="guide-step-index">${index + 1}</span>
+            <p>${step}</p>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="guide-actions">
+        <button class="guide-action-primary" id="route-btn">Show route</button>
+        <button class="guide-action-secondary" id="route-clear-btn">Clear route</button>
+      </div>
+    </div>
+  `, 'primary');
+
+  requestAnimationFrame(() => {
+    document.getElementById('route-btn')?.addEventListener('click', () => drawRouteToBuilding(building));
+    document.getElementById('route-clear-btn')?.addEventListener('click', () => clearRoute());
+  });
+}
+
+/**
+ * Show the initial supermarket-style campus overview panel.
+ */
+function showWelcomePanel() {
+  const featured = buildings.filter((building) => [
+    'Admin Block',
+    'Main Block',
+    'Mechanical Block',
+    'Boys Hostel',
+    'Girls Hostel',
+  ].includes(building.properties.name));
+
+  showPanel(`
+    <div class="guide-shell">
+      <div class="guide-head">
+        <div>
+          <p class="panel-label">Campus map</p>
+          <p class="panel-building">Choose a destination</p>
+          <p class="panel-sub">Tap any building or search for it. The map will draw a route like an indoor store guide.</p>
+        </div>
+      </div>
+
+      <div class="guide-route-note">
+        <span class="route-pill">Main gate</span>
+        <span class="route-pill route-pill-muted">Live routing</span>
+      </div>
+
+      <div class="quick-stops" aria-label="Quick destinations">
+        ${featured.map((building) => `
+          <button class="quick-stop" data-building="${building.properties.name}">
+            <strong>${building.properties.short_name || building.properties.name}</strong>
+            <span>${building.properties.type}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <p class="guide-footer">Search building names, open the guide, and tap <strong>Show route</strong> to see the wayfinding path.</p>
+    </div>
+  `, 'info');
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.quick-stop').forEach((button) => {
+      button.addEventListener('click', () => {
+        const building = buildings.find((item) => item.properties.name === button.dataset.building);
+        if (building) {
+          focusBuilding(building);
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Focus the map and show guidance for a building.
+ */
+function focusBuilding(building) {
+  map.flyTo(building.centroid, 18, { animate: true, duration: 0.8 });
+  drawRouteToBuilding(building);
+  showGuidePanel(building);
+  setTimeout(() => building.layer.openPopup(), 700);
+}
+
+/**
  * Build popup HTML for a building feature.
  */
 function buildPopupHTML(props, color) {
@@ -90,7 +295,7 @@ function buildPopupHTML(props, color) {
     <div class="popup-content">
       <div class="popup-header">
         <span class="popup-name">${props.name}</span>
-        <span class="popup-badge" style="background:${color}22;color:${color}">
+        <span class="popup-badge" style="background:${color}20;color:${color}">
           ${props.type}
         </span>
       </div>
@@ -147,13 +352,20 @@ async function loadBuildings() {
     const color    = typeColors[props.type] || typeColors.other;
     const centroid = getCentroid(geom.coordinates);
     const llCoords = toLLPairs(geom.coordinates);
+    const building = {
+      properties : props,
+      centroid   : centroid,
+      coordinates: geom.coordinates,
+      layer      : null,
+      color      : color,
+    };
 
     const layer = L.polygon(llCoords, {
       color       : color,
       weight      : 2,
-      opacity     : 0.85,
+      opacity     : 0.8,
       fillColor   : color,
-      fillOpacity : 0.28,
+      fillOpacity : 0.3,
     }).addTo(map);
 
     // Popup
@@ -163,16 +375,17 @@ async function loadBuildings() {
       closeButton : true,
     }).setContent(buildPopupHTML(props, color));
     layer.bindPopup(popup);
+    building.layer = layer;
 
     // Hover effects
     layer.on('mouseover', () => {
       if (layer !== activeLayer) {
-        layer.setStyle({ fillOpacity: 0.52, weight: 3 });
+        layer.setStyle({ fillOpacity: 0.55, weight: 3 });
       }
     });
     layer.on('mouseout', () => {
       if (layer !== activeLayer) {
-        layer.setStyle({ fillOpacity: 0.28, weight: 2 });
+        layer.setStyle({ fillOpacity: 0.3, weight: 2 });
       }
     });
 
@@ -180,15 +393,12 @@ async function loadBuildings() {
     layer.on('click', () => {
       // Reset previous active
       if (activeLayer && activeLayer !== layer) {
-        activeLayer.setStyle({ fillOpacity: 0.28, weight: 2, dashArray: null });
+        activeLayer.setStyle({ fillOpacity: 0.3, weight: 2, dashArray: null });
       }
       activeLayer = layer;
-      layer.setStyle({ fillOpacity: 0.52, weight: 3, dashArray: '6 4' });
+      layer.setStyle({ fillOpacity: 0.55, weight: 3, dashArray: '6 4' });
 
-      // Show info in bottom panel on small screens (popup handles desktop)
-      if (window.innerWidth < 640) {
-        showBuildingInfo(props, color);
-      }
+      showGuidePanel(building);
     });
 
     // divIcon label at centroid — hidden below zoom 16
@@ -215,14 +425,10 @@ async function loadBuildings() {
     });
 
     // Store for GPS + search use
-    buildings.push({
-      properties : props,
-      centroid   : centroid,
-      coordinates: geom.coordinates,
-      layer      : layer,
-      color      : color,
-    });
+    buildings.push(building);
   });
+
+  showWelcomePanel();
 }
 
 loadBuildings();
@@ -438,7 +644,7 @@ function detectBuilding(lat, lng) {
 // ============================================================
 
 /**
- * Show a building info panel (from polygon click, desktop only).
+ * Show a building info panel (from polygon click, mobile only).
  */
 function showBuildingInfo(props, color) {
   const depts = props.departments && props.departments.length
@@ -512,8 +718,9 @@ function showPanel(html, state) {
 map.on('click', () => {
   const panel = document.getElementById('bottom-panel');
   panel.classList.remove('panel-visible');
+  clearRoute();
   if (activeLayer) {
-    activeLayer.setStyle({ fillOpacity: 0.28, weight: 2, dashArray: null });
+    activeLayer.setStyle({ fillOpacity: 0.3, weight: 2, dashArray: null });
     activeLayer = null;
   }
 });
@@ -540,11 +747,14 @@ document.getElementById('camera-input').addEventListener('change', (e) => {
 
     const preview = document.createElement('div');
     preview.className = 'photo-preview';
+
+    // FIX 5: Use navigator.share (not navigator.canShare) per MASTER_PROMPT spec.
+    // navigator.share is the standard Web Share API check.
     preview.innerHTML = `
       <img src="${dataUrl}" alt="Location photo" class="photo-thumb">
       <p class="photo-caption">${currentBuilding} — ${timestamp}</p>
       <div class="photo-actions">
-        ${navigator.canShare ? '<button id="share-btn">Share ↗</button>' : ''}
+        ${navigator.share ? '<button id="share-btn">Share ↗</button>' : ''}
         <a id="download-btn" href="${dataUrl}" download="amc-campus-${Date.now()}.jpg">Download ↓</a>
       </div>`;
 
@@ -554,7 +764,7 @@ document.getElementById('camera-input').addEventListener('change', (e) => {
     document.getElementById('share-btn')?.addEventListener('click', async () => {
       try {
         const blob = await fetch(dataUrl).then(r => r.blob());
-        const shareFile = new File([blob], 'amc-campus-location.jpg', { type: 'image/jpeg' });
+        const shareFile = new File([blob], 'campus-location.jpg', { type: 'image/jpeg' });
         await navigator.share({
           files : [shareFile],
           title : `I am at ${currentBuilding} — AMC Engineering College`,
@@ -618,8 +828,7 @@ searchInput.addEventListener('input', () => {
     `;
 
     const select = () => {
-      map.flyTo(b.centroid, 18, { animate: true, duration: 0.8 });
-      setTimeout(() => b.layer.openPopup(), 900);
+      focusBuilding(b);
       searchInput.value = '';
       searchClear.style.display = 'none';
       searchResults.innerHTML  = '';
