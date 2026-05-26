@@ -1,0 +1,101 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Admin Block",
+        "short_name": "Admin",
+        "type": "admin",
+        "floors": 3,
+        "description": "Administrative offices, principal's office, examination cell, and student services. The central hub for all official college matters.",
+        "departments": [],
+        "landmark": "Western side of campus, near the main entrance"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5876112,12.8290108],[77.5875897,12.8287314],[77.5885997,12.8286511],[77.5885889,12.8283264],[77.5887465,12.8283124],[77.5887787,12.8289025],[77.5876112,12.8290108]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Main Block",
+        "short_name": "Main",
+        "type": "academic",
+        "floors": 4,
+        "description": "Primary academic building housing classrooms, seminar halls, and faculty offices for core engineering departments.",
+        "departments": ["CSE", "ECE", "EEE", "Civil"],
+        "landmark": "Central-east area of campus, tall multi-storey building"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5900661,12.8294082],[77.5900606,12.8292151],[77.5901777,12.8292124],[77.5901303,12.8279857],[77.5900187,12.827983],[77.5900187,12.8278497],[77.5902949,12.8278361],[77.5903395,12.8294001],[77.5900661,12.8294082]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mechanical Block",
+        "short_name": "Mech",
+        "type": "academic",
+        "floors": 3,
+        "description": "Department of Mechanical Engineering with workshops, CAD labs, thermal labs, and manufacturing facilities.",
+        "departments": ["Mechanical", "Industrial"],
+        "landmark": "East side of campus, adjacent to the Main Block"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5899524,12.8278356],[77.5899489,12.8276178],[77.5899489,12.8276178],[77.5905481,12.8275936],[77.5905515,12.8278183],[77.5899524,12.8278356]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Boys Hostel",
+        "short_name": "BH",
+        "type": "hostel",
+        "floors": 4,
+        "description": "On-campus residential facility for male students with rooms, common areas, and amenities.",
+        "departments": [],
+        "landmark": "South-east corner of campus"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.589769,12.8276229],[77.5896539,12.8271189],[77.5896539,12.8271189],[77.5904957,12.8269592],[77.5905971,12.8274721],[77.589769,12.8276229]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Girls Hostel",
+        "short_name": "GH",
+        "type": "hostel",
+        "floors": 3,
+        "description": "On-campus residential facility for female students with rooms, common areas, and 24-hour security.",
+        "departments": [],
+        "landmark": "Southern end of campus"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5895053,12.8271494],[77.5894063,12.8267555],[77.5895266,12.8267222],[77.5896436,12.8271091],[77.5895053,12.8271494]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "AMC Engineering College",
+        "short_name": "AMC",
+        "type": "other",
+        "floors": 1,
+        "description": "Overall campus boundary of AMC Engineering College, Bangalore. Established institution offering undergraduate and postgraduate engineering programs.",
+        "departments": [],
+        "landmark": "Full campus perimeter boundary"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5878945,12.8298615],[77.5867078,12.8265521],[77.5867078,12.8265521],[77.5907476,12.8260757],[77.590355,12.8300571],[77.5891422,12.8303039],[77.58902,12.8297679],[77.5878945,12.8298615]]]
+      }
+    }
+  ]
+}

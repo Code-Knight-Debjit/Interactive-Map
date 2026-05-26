@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Campus Navigator — AMC Engineering College interactive map">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Campus Navigator — AMC Engineering College</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header Bar -->
+  <header id="app-header">
+    <div id="brand">
+      <div id="brand-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="8" fill="#2563EB"/>
+          <path d="M14 6C10.134 6 7 9.134 7 13c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z" fill="white" opacity="0.9"/>
+          <circle cx="14" cy="13" r="2.5" fill="#2563EB"/>
+        </svg>
+      </div>
+      <div id="brand-text">
+        <span id="brand-name">Campus Navigator</span>
+        <span id="brand-college">AMC Engineering College</span>
+      </div>
+    </div>
+
+    <div id="search-wrapper">
+      <svg id="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input id="search-input" type="text" placeholder="Search buildings…" autocomplete="off"
+             aria-label="Search campus buildings" aria-haspopup="listbox" aria-expanded="false">
+      <button id="search-clear" aria-label="Clear search" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div id="search-results" role="listbox" aria-label="Building search results"></div>
+    </div>
+  </header>
+
+  <!-- Map container -->
+  <div id="map" role="main" aria-label="Campus map"></div>
+
+  <!-- Hidden camera input -->
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" aria-hidden="true">
+
+  <!-- Bottom panel -->
+  <div id="bottom-panel" aria-live="polite" aria-label="Location information" role="region">
+    <div id="panel-handle" aria-hidden="true"></div>
+    <div id="panel-content"></div>
+  </div>
+
+  <!-- Floating controls -->
+  <div id="controls">
+    <button id="locate-btn" aria-label="Find my location on campus">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="3" stroke="white" stroke-width="2"/>
+        <path d="M11 2V5M11 17V20M2 11H5M17 11H20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span id="locate-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPM=" crossorigin=""></script>
+
+  <!-- App logic -->
+  <script src="app.js"></script>
+</body>
+</html>
